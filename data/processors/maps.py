@@ -7,6 +7,8 @@ import yaml
 from PIL import Image
 from pathlib import Path
 import logging
+import shapely.geometry
+import shapely.affinity
 
 EXTERNAL_PATH = Path(__file__).parent.parent / "external"
 RF_MAPS_PATH = EXTERNAL_PATH / "maps" / "roomfinder"
@@ -54,6 +56,43 @@ def assign_roomfinder_maps(data):
             logging.warning(f"No Roomfinder maps available for '{_id}'")
             continue
         _save_map_data(available_maps, entry)
+
+
+def _convert_latlonbox_to_coordinates(box):
+    """
+    converts the latlonbox to coordinates.
+    The coordinates are are four [lon, lat] pairs, for the
+    - top left,
+    - top right,
+    - bottom right,
+    - bottom left image corners.
+    """
+    rotation = float(box["rotation"])
+    east, west = float(box["east"]), float(box["west"])
+    north, south = float(box["north"]), float(box["south"])
+
+    box = shapely.geometry.box(west, south, east, north)
+    rot_box = shapely.affinity.rotate(box, rotation, origin="centroid")
+    coords = [[x, y] for x, y in rot_box.exterior.coords]
+    return [coords[2], coords[1], coords[0], coords[3]]
+
+
+if __name__ == "__main__":
+    coords = _convert_latlonbox_to_coordinates({
+        'north': '48.2624632522',
+        'east': '11.6688558645',
+        'west': '11.6682807315',
+        'south': '48.2617256799',
+        'rotation': '-15.7610714436'})
+
+
+    def p(x):
+        print("https://mobisoftinfotech.com/tools/plot-multiple-points-on-map/")
+        for i, (lat, lon) in enumerate(x):
+            print(f'{lon},{lat},{["red", "orange", "yellow", "green"][i]},marker,"{i}"')
+
+
+    p(coords)
 
 
 def _save_map_data(available_maps, entry):
@@ -208,6 +247,7 @@ def build_roomfinder_maps(data):
 
                 entry_map["x"] = ix
                 entry_map["y"] = iy
+                entry_map["coordinates"] = _convert_latlonbox_to_coordinates(map_data["latlonbox"])
 
                 # set source and filepath so that they are available for all maps
                 entry_map.setdefault("source", "Roomfinder")
@@ -257,10 +297,10 @@ def _load_custom_maps():
             # For some reason, these are given as str
             "scale": str(map_group["props"]["scale"]),
             "latlonbox": {
-                "north":    map_group["props"]["north"],
-                "east":     map_group["props"]["east"],
-                "west":     map_group["props"]["west"],
-                "south":    map_group["props"]["south"],
+                "north": map_group["props"]["north"],
+                "east": map_group["props"]["east"],
+                "west": map_group["props"]["west"],
+                "south": map_group["props"]["south"],
                 "rotation": map_group["props"]["rotation"],
             }
         }
