@@ -364,7 +364,18 @@ navigatum.registerView('view', {
                 this.coord_counter.to_confirm_delete = true;
             }
         },
-        loadInteractiveMap: function(from_ui) {
+        showRoomfinderOverlay: function() {
+            const selectedRFMap=this.view_data.maps.roomfinder.available[this.state.map.roomfinder.selected_index];
+            this.loadInteractiveMap(true, {
+                id: 0,
+                url: '/* @echo cdn_prefix */maps/roomfinder/' + selectedRFMap.file,
+                coordinates: selectedRFMap.coordinates,
+                floor: "Rf",
+                name: selectedRFMap.name,
+                opacity: 0.5,
+            });
+        },
+        loadInteractiveMap: function(from_ui, customOverlay=null) {
             var _this = this;
             var from_map = this.state.map.selected;
 
@@ -393,16 +404,21 @@ navigatum.registerView('view', {
                     _this.map.interactive.marker = marker;
                     const coords = _this.view_data.coords;
                     marker.setLngLat([coords.lon, coords.lat]).addTo(map);
-                    
-                    if (_this.view_data.maps && _this.view_data.maps.overlays) {
-                        c.setFloorOverlays(
-                            _this.view_data.maps.overlays.available,
-                            _this.view_data.maps.overlays.default
-                        )
-                    } else {
-                        c.setFloorOverlays(null)
+
+                    if (customOverlay) {
+                        c.setFloorOverlays([customOverlay], 0)
                     }
-                    
+                    else {
+                        if (_this.view_data.maps && _this.view_data.maps.overlays) {
+                            c.setFloorOverlays(
+                                _this.view_data.maps.overlays.available,
+                                _this.view_data.maps.overlays.default
+                            )
+                        } else {
+                            c.setFloorOverlays(null)
+                        }
+                    }
+
                     var default_zooms = {
                         joined_building: 16,
                         building: 17,
