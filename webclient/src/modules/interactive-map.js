@@ -65,7 +65,12 @@ navigatum.registerModule("interactive-map", (function() {
                     return function() {
                         if (floors) {
                             _this._setActiveFloor(i, floors[i].floor);
-                            _this.fire("floor-changed", {file: floors[i].file, coords: floors[i].coordinates});
+                            const opacity=floors[i].hasOwnProperty("opacity")? floors[i].opacity:1
+                            if (floors[i].hasOwnProperty("file"))
+                                _this.fire("floor-changed", {file: floors[i].file, coords: floors[i].coordinates, opacity});
+                            else
+                                _this.fire("floor-changed", {url: floors[i].url, coords: floors[i].coordinates, opacity});
+
                         } else {
                             _this._setActiveFloor(i, "∅");
                             _this.fire("floor-changed", {file: null, coords: null});
@@ -91,7 +96,10 @@ navigatum.registerModule("interactive-map", (function() {
                     this.fire("floor-changed", {file: null, coords: null});
                 } else {
                     this._setActiveFloor(visible_i, floors[visible_i].floor);
-                    this.fire("floor-changed", {file: floors[visible_i].file, coords: floors[visible_i].coordinates});
+                    if (floors[visible_i].hasOwnProperty("file"))
+                        this.fire("floor-changed", {file: floors[visible_i].file, coords: floors[visible_i].coordinates});
+                    else
+                        this.fire("floor-changed", {url: floors[visible_i].url, coords: floors[visible_i].coordinates});
                 }
 
                 // The last button hides all overlays
@@ -266,7 +274,13 @@ navigatum.registerModule("interactive-map", (function() {
             var _this = this;
             map.floorControl = new FloorControl();
             map.floorControl.on("floor-changed", function(args) {
-                _this.setOverlayImage(args.file ? "/* @echo cdn_prefix */maps/overlay/" + args.file : null, args.coords);
+                let url = null;
+                if (args.hasOwnProperty("file") && args.file)
+                    url="/* @echo cdn_prefix */maps/overlay/" + args.file;
+                if (args.hasOwnProperty("url") && args.url)
+                    url=args.url;
+                const oppacity=args.hasOwnProperty("oppacity") ? args.oppacity:1;
+                _this.setOverlayImage(url, args.coords, oppacity);
             })
             map.addControl(map.floorControl, "bottom-left");
 
@@ -280,7 +294,7 @@ navigatum.registerModule("interactive-map", (function() {
         },
         // Set the currently visible overlay image in the map,
         // or hide it if img_url is null.
-        setOverlayImage: function(img_url, coords) {
+        setOverlayImage: function(img_url, coords, oppacity=1) {
             // Even if the map is initialized, it could be that
             // it hasn't loaded yet, so we need to postpone adding
             // the overlay layer.
@@ -292,7 +306,7 @@ navigatum.registerModule("interactive-map", (function() {
             if (!_map.initialLoaded) {
                 var _this = this;
                 _map.on("load", function() {
-                    _this.setOverlayImage(img_url, coords);
+                    _this.setOverlayImage(img_url, coords, oppacity);
                 });
                 return;
             }
@@ -319,14 +333,16 @@ navigatum.registerModule("interactive-map", (function() {
 
                 layer = _map.getLayer("overlay-layer")
                 if (!layer) {
-                    _map.addLayer({
-                        "id": "overlay-bg",
-                        "type": "background",
-                        "paint": {
-                            "background-color": "#ffffff",
-                            "background-opacity": 0.6,
-                        }
-                    })
+                    if (oppacity===1) {
+                        _map.addLayer({
+                            "id": "overlay-bg",
+                            "type": "background",
+                            "paint": {
+                                "background-color": "#ffffff",
+                                "background-opacity": 0.6,
+                            }
+                        })
+                    }
                     layer = _map.addLayer({
                         "id": "overlay-layer",
                         "type": "raster",
@@ -335,6 +351,11 @@ navigatum.registerModule("interactive-map", (function() {
                             "raster-fade-duration": 0,
                         }
                     })
+                    _map.setPaintProperty(
+                        'overlay-layer',
+                        'raster-opacity',
+                        oppacity
+                    );
                 } else {
                     _map.setLayoutProperty("overlay-layer", "visibility", "visible")
                     _map.setLayoutProperty("overlay-bg", "visibility", "visible")
