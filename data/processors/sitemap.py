@@ -2,25 +2,54 @@ import json
 import logging
 import urllib.error
 import urllib.request
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec: used for writing to a file, not for reading
 from datetime import datetime
+from typing import Union
 
-import defusedxml.ElementTree as defusedET  # supports only parse()
+from compile import DEBUG_MODE
+from defusedxml import ElementTree as defusedET  # type:ignore
+
+# defusedxml only supports parse()
 
 
 def generate_sitemap():
     """Generate a sitemap that diffs changes since to the currently online data"""
+
+    if DEBUG_MODE:
+        logging.info("Skipping sitemap generation in Dev Mode (GIT_COMMIT_SHA is unset)")
+        return
+
     # Load exported data. This function is intentionally not using the data object
     # directly, but re-parsing the output file instead, because the export not
     # export all fields. This way we're also guaranteed to have the same types
     # (and not e.g. numpy floats).
-    with open("output/api_data.json") as f:
-        new_data = json.load(f)
+    with open("output/api_data.json", encoding="utf-8") as file:
+        new_data = json.load(file)
 
     # Currently online data
     req = urllib.request.Request("https://nav.tum.sexy/cdn/api_data.json")
-    with urllib.request.urlopen(req) as resp:
+    with urllib.request.urlopen(req) as resp:  # nosec: url parameter is fixed and does not allow for file traversal
         old_data = json.loads(resp.read().decode("utf-8"))
+
+    # Look whether there are currently online sitemaps for the provided
+    # sitemaps name. In case there aren't, we assume this sitemap is new,
+    # and all entries will be marked as changed.
+    old_sitemaps = _download_online_sitemaps(["room", "other"])
+
+    sitemaps = _extract_sitemap_data(new_data, old_data, old_sitemaps)
+
+    for name, sitemap in sitemaps.items():
+        _write_sitemap_xml(f"output/sitemap-data-{name}.xml", sitemap)
+
+    _write_sitemapindex_xml("output/sitemap.xml", sitemaps)
+
+
+def _extract_sitemap_data(new_data, old_data, old_sitemaps) -> dict[str, list[dict[str, Union[str, float, datetime]]]]:
+    """
+    Extract sitemap data.
+    Lastmod is set to the current time if the entry is modified (idicated via comparing newdata vs olddata),
+    or to the last modification time of the online sitemap if the entry is not modified.
+    """
 
     # Each sitemap has a limit of 50MB uncompressed or 50000 entries
     # (that means 1KB per site). We have currently about 33000 entries,
@@ -29,15 +58,10 @@ def generate_sitemap():
     # sitemap is split into one for rooms and one for the rest.
     # Note that the root element is not included, because it just redirects
     # to the main page.
-    sitemaps = {
+    sitemaps: dict[str, list[dict[str, Union[str, float, datetime]]]] = {
         "room": [],
         "other": [],
     }
-
-    # Look whether there are currently online sitemaps for the provided
-    # sitemaps name. In case there aren't, we assume this sitemap is new,
-    # and all entries will be marked as changed.
-    old_sitemaps = _download_online_sitemaps(sitemaps.keys())
 
     changed_count = 0
     for _id, entry in new_data.items():
@@ -87,13 +111,9 @@ def generate_sitemap():
                 "priority": priority,
             },
         )
-
     logging.info(f"{changed_count} of {len(new_data) - 1} URLs have been updated.")
 
-    for name, sitemap in sitemaps.items():
-        _write_sitemap_xml(f"output/sitemap-data-{name}.xml", sitemap)
-
-    _write_sitemapindex_xml(f"output/sitemap.xml", sitemaps)
+    return sitemaps
 
 
 def _download_online_sitemaps(sitemap_names):
@@ -105,10 +125,10 @@ def _download_online_sitemaps(sitemap_names):
 
 
 def _download_online_sitemap(url):
-    xmlns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+    xmlns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"  # noqa: FS003
     req = urllib.request.Request(url)
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req) as resp:  # nosec: url parameter is fixed and does not allow for file traversal
             sitemap_str = resp.read().decode("utf-8")
             sitemap = {}
             root = defusedET.fromstring(sitemap_str)
@@ -117,8 +137,8 @@ def _download_online_sitemap(url):
                 lastmod = child.find(f"{xmlns}lastmod")
                 if loc is not None and lastmod is not None:
                     sitemap[loc.text] = datetime.fromisoformat(lastmod.text.rstrip("Z"))
-    except urllib.error.HTTPError as e:
-        logging.warning(f"Failed to download sitemap '{url}': {e}")
+    except urllib.error.HTTPError as error:
+        logging.warning(f"Failed to download sitemap '{url}': {error}")
     return sitemap
 
 
@@ -148,7 +168,7 @@ def _write_sitemapindex_xml(fname, sitemaps):
         loc = ET.SubElement(sitemap_el, "loc")
         loc.text = f"https://nav.tum.sexy/cdn/sitemap-data-{name}.xml"
         # we set the lastmod to the latest lastmod of all sitemaps
-        lastmod_dates = set(site["lastmod"] for site in sitemap if "lastmod" in site)
+        lastmod_dates = {site["lastmod"] for site in sitemap if "lastmod" in site}
         if lastmod_dates:
             lastmod = ET.SubElement(sitemap_el, "lastmod")
             lastmod.text = max(lastmod_dates).isoformat(timespec="seconds") + "Z"

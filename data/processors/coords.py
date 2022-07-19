@@ -1,7 +1,7 @@
 import copy
 import logging
 
-import utm
+import utm  # type: ignore
 
 
 def assert_buildings_have_coords(data):
@@ -10,8 +10,8 @@ def assert_buildings_have_coords(data):
     coordinates of buildings, so it is necessary, that at least all buildings have
     a coordinate.
     """
-    buildings = list((_id, entry) for _id, entry in data.items() if entry["type"] == "building")
-    buildings_without_coord = set(_id for _id, entry in buildings if "coords" not in entry)
+    buildings = [(_id, entry) for _id, entry in data.items() if entry["type"] == "building"]
+    buildings_without_coord = {_id for _id, entry in buildings if "coords" not in entry}
     if buildings_without_coord:
         raise RuntimeError(f"No coordinates known for the following buildings: {buildings_without_coord}")
 
@@ -95,10 +95,10 @@ def _convert_coordinate_formats(entry):
 def _calc_coordinte_from_children(data, entry):
     """Calculate the average coordinate of all children"""
     lats, lons = ([], [])
-    for c in entry["children_flat"]:
-        if data[c]["type"] == "building":
-            lats.append(data[c]["coords"]["lat"])
-            lons.append(data[c]["coords"]["lon"])
+    for child in entry["children_flat"]:
+        if data[child]["type"] == "building":
+            lats.append(data[child]["coords"]["lat"])
+            lons.append(data[child]["coords"]["lon"])
     lat_coord = sum(lats) / len(lats)
     lon_coord = sum(lons) / len(lons)
     utm_coord = utm.from_latlon(lat_coord, lon_coord)
@@ -132,3 +132,10 @@ def check_coords(input_data):
                 f"{iid}: utm coordinate is zero. There is very likely an error in the source data "
                 f"(UTM coordinates are either from the Roomfinder or automatically calculated).",
             )
+
+
+def add_and_check_coords(data):
+    """Add coordinates to all entries and check for issues"""
+    assert_buildings_have_coords(data)
+    assign_coordinates(data)
+    check_coords(data)

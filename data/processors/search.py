@@ -30,7 +30,6 @@ def add_ranking_base(data):
                 "NF4.4": 50,  # Poststelle, Anlieferung (Annahme- und Ausgaberäume)
                 "NF5.1": 900,  # Hörsaal (Unterrichtsräume mit festem Gestühl)
                 "NF5.2": 500,  # Seminarraum, Zeichensaal, Übungsraum (Allg. Unterrichtsräume ...)
-                "NF5.2": 250,  # Sprachlabor (Besondere Unterrichtsräume ...)
                 "NF5.3": 250,  # Musikunterricht (Besondere Unterrichtsräume ...)
                 "NF5.4": 400,  # Lesesaal, Freihandbibliothek (Bibliotheksräume)
                 "NF5.5": 150,  # Sportraum, Turnsaal, Schwimmhalle (Sporträume)
@@ -66,9 +65,11 @@ def add_ranking_combined(data):
     """
     for _id, _data in data.items():
         if "ranking_factors" in _data:
-            rf = _data["ranking_factors"]
-            type_usage_ranking = rf["rank_type"] * rf["rank_usage"]
-            rf["rank_combined"] = type_usage_ranking // 100 + rf.get("rank_boost", 0) + rf.get("rank_custom", 0)
+            faktors = _data["ranking_factors"]
+            type_usage_ranking = faktors["rank_type"] * faktors["rank_usage"]
+            faktors["rank_combined"] = (
+                type_usage_ranking // 100 + faktors.get("rank_boost", 0) + faktors.get("rank_custom", 0)
+            )
 
         else:
             _data["ranking_factors"] = {
