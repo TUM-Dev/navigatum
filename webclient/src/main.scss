@@ -1,4 +1,4 @@
-@import "src/variables.scss";
+@import "src/variables";
 
 /* === General === */
 html {
@@ -55,8 +55,8 @@ body {
 }
 
 @keyframes loading-in {
-    from { opacity: 0 }
-    to { opacity: 1 }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 // --- Menu general
@@ -110,8 +110,8 @@ body {
     box-shadow: 0 2px 3px $header-shadow-color;
 
     .input-group button {
-        //background: #0065bd;
-        border: none;
+        // background: #0065bd;
+        border: 0;
     }
 
     width: 100%;
@@ -188,7 +188,7 @@ body {
 }
 
 .menu .search-comment {
-    margin: -8px -8px 0 -8px;
+    margin: -8px -8px 0;
     padding: 6px 16px;
     font-size: 14px;
     color: $autocomplete-comment-color;
@@ -213,11 +213,10 @@ body {
     }
 
     &.actions {
-        margin: -4px 0px;
+        margin: -4px 0 -4px 32px;
         padding: 4px 8px;
         overflow-x: auto;
         white-space: nowrap;
-        margin-left: 32px;
 
         div {
             display: inline-block;
@@ -291,7 +290,7 @@ body {
 }
 
 #feedback-coordinate-picker {
-    //text-align: right;
+    // text-align: right;
     float: right;
     margin-top: .5em;
 }
@@ -302,7 +301,7 @@ body {
 
 /* === Footer === */
 footer {
-    padding: 8px 0 16px 0;
+    padding: 8px 0 16px;
     background: $footer-color;
     bottom: -130px;
     position: absolute;
@@ -325,7 +324,7 @@ footer {
         a,
         router-link,
         button {
-            font-size: 0.6rem;
+            font-size: .6rem;
         }
 
         button {
@@ -339,10 +338,10 @@ footer {
     }
 
     .settings {
-        //margin: .8rem .8rem .8rem -.8rem;
+        // margin: .8rem .8rem .8rem -.8rem;
 
         .setting-group {
-            margin-top: calc(0.4rem - 1px);
+            margin-top: calc(.4rem - 1px);
         }
 
         .btn-group {
@@ -373,17 +372,17 @@ footer {
 
         .links {
             ul {
-                margin: .8rem .8rem .8rem .8rem;
+                margin: .8rem;
 
                 li {
-                    margin-top: 0.4rem;
+                    margin-top: .4rem;
                 }
             }
 
             a,
             router-link,
             button {
-                font-size: 0.7rem;
+                font-size: .7rem;
             }
         }
     }

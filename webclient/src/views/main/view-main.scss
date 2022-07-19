@@ -1,4 +1,4 @@
-@import "src/variables.scss";
+@import "src/variables";
 
 #view-main {
     .panel {
@@ -48,7 +48,7 @@
             }
 
             .link-more {
-                opacity: 0.5;
+                opacity: .5;
                 transition: opacity .1s;
 
                 .tile {
@@ -69,7 +69,7 @@
         .btn-more,
         .btn-less {
             margin-top: 5px;
-            padding-bottom: 0px;
+            padding-bottom: 0;
             padding-left: 0;
         }
 
