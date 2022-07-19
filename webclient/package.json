@@ -8,6 +8,31 @@
   "type": "module",
   "author": "",
   "license": "ISC",
+  "eslintConfig": {
+    "extends": [
+      "@paulhfischer/eslint-config-javascript"
+    ],
+    "env": {
+      "browser": true
+    }
+  },
+  "prettier": {
+    "extends": [
+      "@paulhfischer/prettier-config"
+    ],
+    "rules": {
+      "tab-width": 2
+    }
+  },
+  "stylelint": {
+    "extends": [
+      "@paulhfischer/stylelint-config"
+    ],
+    "rules": {
+      "selector-max-id": null,
+      "max-nesting-depth": null
+    }
+  },
   "devDependencies": {
     "@babel/core": "^7.14.8",
     "@babel/preset-env": "^7.14.8",
@@ -29,7 +54,7 @@
     "gulp-inject": "^5.0.5",
     "gulp-inject-string": "^1.1.2",
     "gulp-inject-stringified-html": "^2.0.0-alpha.2",
-    "gulp-markdown": "^7.0.0",
+    "gulp-markdown": "^6.0.0",
     "gulp-preprocess": "^4.0.2",
     "gulp-purgecss": "^4.0.3",
     "gulp-rename": "^2.0.0",
